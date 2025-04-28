@@ -88,30 +88,63 @@ class _ItemListScreenState extends State<ItemListScreen> {
             },
             itemBuilder: (context, index) {
               final item = items[index];
-              return Card(
-                key: ValueKey(item.id),
-                child: ListTile(
-                  title: Text(item.nome),
-                  subtitle: Text('Quantidade: ${item.quantidade}'),
-                  leading: IconButton(
-                    icon: Icon(
-                      item.comprado ? Icons.check_box : Icons.check_box_outline_blank,
-                      color: item.comprado ? Colors.green : null,
+              return Dismissible(
+                key: ValueKey('dismiss_${item.id}'),
+                direction: DismissDirection.endToStart,
+                background: Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    onPressed: () => _toggleComprado(item),
+                    width: 80,
+                    height: 56,
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.delete, color: Colors.white),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _openForm(item: item),
+                ),
+                confirmDismiss: (_) async {
+                  return await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Confirmar exclusão'),
+                      content: Text('Deseja realmente excluir "${item.nome}"?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Excluir'),
+                        ),
+                      ],
+                    ),
+                  ) ?? false;
+                },
+                onDismissed: (_) => _deleteItem(item.id!),
+                child: Card(
+                  key: ValueKey(item.id),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  child: ListTile(
+                    title: Text(item.nome),
+                    subtitle: Text('Quantidade: ${item.quantidade}'),
+                    leading: IconButton(
+                      icon: Icon(
+                        item.comprado ? Icons.check_box : Icons.check_box_outline_blank,
+                        color: item.comprado ? Colors.green : null,
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _deleteItem(item.id!),
-                      ),
-                    ],
+                      onPressed: () => _toggleComprado(item),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => _openForm(item: item),
+                    ),
                   ),
                 ),
               );
