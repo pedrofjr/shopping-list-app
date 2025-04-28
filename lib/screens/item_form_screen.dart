@@ -87,18 +87,10 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                         if (int.parse(value) < 0) return 'Quantidade não pode ser negativa';
                         return null;
                       },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.remove),
-                    onPressed: () async {
-                      int value = int.tryParse(_quantidadeController.text) ?? 0;
-                      if (value > 0) {
-                        setState(() {
-                          _quantidadeController.text = (value - 1).toString();
-                        });
-                        if (value - 1 == 0) {
+                      onChanged: (value) async {
+                        int? val = int.tryParse(value);
+                        if (val == 0 && widget.item?.id != null) {
+                          final previousValue = widget.item?.quantidade ?? 1;
                           final shouldDelete = await showDialog<bool>(
                             context: context,
                             builder: (context) => AlertDialog(
@@ -116,7 +108,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                               ],
                             ),
                           );
-                          if (shouldDelete == true && widget.item?.id != null) {
+                          if (shouldDelete == true) {
                             setState(() => _isSaving = true);
                             try {
                               await ItemService.deleteItem(widget.item!.id!);
@@ -128,6 +120,60 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                             } finally {
                               setState(() => _isSaving = false);
                             }
+                          } else {
+                            // Volta para valor anterior, ou 1 se não houver
+                            setState(() {
+                              _quantidadeController.text = previousValue > 0 ? previousValue.toString() : '1';
+                            });
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.remove),
+                    onPressed: () async {
+                      int value = int.tryParse(_quantidadeController.text) ?? 0;
+                      final previousValue = value;
+                      if (value > 0) {
+                        setState(() {
+                          _quantidadeController.text = (value - 1).toString();
+                        });
+                        if (value - 1 == 0 && widget.item?.id != null) {
+                          final shouldDelete = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Quantidade zerada'),
+                              content: const Text('Deseja apagar este item?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Não'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Sim'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (shouldDelete == true) {
+                            setState(() => _isSaving = true);
+                            try {
+                              await ItemService.deleteItem(widget.item!.id!);
+                              if (mounted) Navigator.pop(context, true);
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Erro ao apagar item: $e')),
+                              );
+                            } finally {
+                              setState(() => _isSaving = false);
+                            }
+                          } else {
+                            setState(() {
+                              _quantidadeController.text = previousValue.toString();
+                            });
                           }
                         }
                       }
